@@ -1,0 +1,32 @@
+{
+  "values": {
+    "first_name": "John Doe",
+    "last_name": "123456",
+    "email": "user@example.com",
+    "dob": "1990-01-01",
+    "languages_spoken": [
+      "Spanish"
+    ],
+    "preferred_days": [
+      "Wednesday"
+    ],
+    "contact_method": "Email",
+    "employer_name": "asdfeds",
+    "job_title": "sadf",
+    "employment_status": "Part-time",
+    "employment_history": "sdf",
+    "has_bonus": "No",
+    "annual_income": 23,
+    "loan_type": "Home",
+    "loan_purpose": "asdf",
+    "collateral": [
+      "Vehicle"
+    ],
+    "loan_amount": 523,
+    "loan_term": 2
+  },
+  "errors": {},
+  "touched": {
+    "languages_spoken": true
+  }
+}
