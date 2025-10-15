@@ -103,3 +103,17 @@ Cypress.Commands.add('fillLoanAmountPage', () => {
   cy.get(loanAmountPage.loanTerm).type('5')
   cy.contains('Finish').click()
 });
+
+Cypress.Commands.add('assignNewPacket', () => {
+  cy.contains('Access Provider Portal').click();
+  cy.contains('EHR integration').should('exist');
+  cy.contains('Assign New Packet').click();
+  cy.fixture('packet_insertion').then((data) => {
+    const packetId = data.packetId;
+    cy.contains('Packet Title').click({force:true}).type(packetId);
+  }
+  );
+  cy.get(providerPortalPage.assigningPacketFormUserField).type('{enter}')
+  cy.contains('Treatment Plan').click();
+  cy.contains('Assign Packet').click();
+});
