@@ -30,6 +30,7 @@ import { jobInfoPage } from '../support/pageObjects/jobInfoPage'
 import { incomePage } from '../support/pageObjects/incomePage'
 import { loanTypePage } from '../support/pageObjects/loanTypePage'
 import { loanAmountPage } from '../support/pageObjects/loanAmountPage'
+import { providerPortalPage } from '../support/pageObjects/providerPortalPage'
 
 Cypress.Commands.add('clickOnBackButton', () => {
   cy.contains('Back').click()
@@ -41,6 +42,11 @@ Cypress.Commands.add('clickOnBackButton', () => {
   cy.contains('Back').click()
   cy.wait(1000)
   cy.contains('Back').click()
+})
+
+Cypresss.Commands.add('deletePacket', () => {
+  cy.get('[aria-label="Delete packet"]').click({force:true})
+  cy.contains('Confirm').click({force:true})
 })
 
 Cypress.Commands.add('fillBasicInfoPage', () => {
