@@ -35,5 +35,15 @@ describe('Provider Portal Page', () => {
     cy.log('Packet deleted successfully');
   })
 })
+  context('Edge cases', () => {
+    it('Types a really long packet name', () =>{
+      cy.contains('Access Provider Portal').click();
+      cy.contains('Assign New Packet').click();
+      cy.fixture('packet_insertion').then((data) => {
+        const packetId = data.huge_packetData;
+        cy.contains('Packet Title').click({force:true}).type(packetId);
+      });
+      cy.get(providerPortalPage.assigningPacketFormUserField).type('{enter}')
+   })
+  })
 });
-
