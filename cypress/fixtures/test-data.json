@@ -1,0 +1,41 @@
+{
+  "invalidIds": {
+    "packetId": "invalid-packet-id-999999",
+    "userId": 999999,
+    "clientId": 999999,
+    "formTypeId": 999999
+  },
+  "validIds": {
+    "clientId": 1,
+    "formTypeId": 1,
+    "costCenterId": 1
+  },
+  "packetStatus": {
+    "notStarted": "Not Started",
+    "completed": "Completed",
+    "invalid": "InvalidStatus123"
+  },
+  "userSearch": {
+    "query": "John"
+  },
+  "errorCodes": {
+    "packetNotFound": "E_PACKET_NOT_FOUND",
+    "userNotFound": "E_USER_NOT_FOUND"
+  },
+  "packet": {
+    "title": "Test Packet",
+    "titlePrefix": "Test Packet"
+  },
+  "httpStatus": {
+    "success": 200,
+    "created": 201,
+    "noContent": 204,
+    "badRequest": 400,
+    "forbidden": 403,
+    "notFound": 404,
+    "serverError": 500,
+    "badGateway": 502,
+    "serviceUnavailable": 503
+  }
+}
+

@@ -1,4 +1,12 @@
 {
-    "packetId": "12345",
-    "huge_packetData": "fdfdafdfdfdafdfdfdafdfdfdafdfdfdafdfdfdafdfdfdafdfdfdafdfdfdafdfdfdafdfdfdafd"
+  "packetId": "12345",
+  "huge_packetData": "fdfdafdfdfdafdfdfdafdfdfdafdfdfdafdfdfdafdfdfdafdfdfdafdfdfdafdfdfdafdfdfdafd",
+  "validPacket": {
+    "clientId": 1,
+    "formTypeIds": [1],
+    "title": "Test Packet"
+  },
+  "invalidPacket": {
+    "packetId": "invalid-packet-id-999999"
+  }
 }

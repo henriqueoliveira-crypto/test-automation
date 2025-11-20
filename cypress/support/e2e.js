@@ -14,4 +14,11 @@
 // ***********************************************************
 
 // Import commands.js using ES2015 syntax:
-//import './commands'
+import './commands'
+
+// Global beforeEach hook to authenticate before every test
+// This ensures all tests have a valid session
+beforeEach(() => {
+  // Use the non-MFA login command to create a session before each test
+  cy.loginNonMFA();
+});

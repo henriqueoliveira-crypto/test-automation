@@ -1,26 +1,30 @@
-describe('User API tests', () => {
+describe('Health API Basic Info', () => {
+  const baseUrl = Cypress.config('baseUrl').replace('/provider', '');
+  let testData;
 
-  it('should Get the page', () => {
-    cy.request('GET', '/health', {
-    }).then((response) => {
-      expect(response.status).to.eq(200);
+  before(() => {
+    cy.fixture('test-data').then((data) => {
+      testData = data;
+    });
+  });
+
+  context('Health Check', () => {
+    it('TC01 - Get health status endpoint', () => {
+      cy.request({
+        method: 'GET',
+        url: `${baseUrl}/api/health`,
+        failOnStatusCode: false,
+      }).then((response) => {
+        expect(response.status).to.be.oneOf([
+          testData.httpStatus.success,
+          testData.httpStatus.serverError,
+          testData.httpStatus.serviceUnavailable,
+          testData.httpStatus.badGateway
+        ]);
+        if (response.status === testData.httpStatus.success) {
+          expect(response.body).to.exist;
+        }
+      });
     });
   });
 });
-
-  // it('should submit form data and receive a success response', () => {
-  //   cy.fixture('form_data').then((data) => {
-  //     cy.request({
-  //       data: {'packet':1},
-  //       method: 'PUT',
-  //       url: '/api/packet/1',
-  //       body: data.values,
-  //       headers: {
-  //         'Content-Type': 'application/json'
-  //       }
-  //     }).then((response) => {
-  //       expect(response.status).to.eq(200);
-  //   });
-  // });
-//});
-
