@@ -20,5 +20,5 @@ import './commands'
 // This ensures all tests have a valid session
 beforeEach(() => {
   // Use the non-MFA login command to create a session before each test
-  cy.loginNonMFA();
+  cy.login();
 });

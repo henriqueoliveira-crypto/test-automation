@@ -125,24 +125,22 @@ Cypress.Commands.add('assignNewPacket', () => {
 });
 
 /**
- * Custom command to handle Microsoft OAuth login with manual approval
+ * Custom command to handle Microsoft OAuth login for non-MFA users
+ * This command automatically fills in credentials and completes the login flow
+ * 
+ * Credentials:
+ * - Username: svc-pacenet-test2@rhanet.org
+ * - Password: Badger123!
+ * 
  * This command:
  * 1. Waits for the page to load and JavaScript to initialize
  * 2. Finds the "Sign In with Microsoft" button and verifies it's visible and enabled
- * 3. Scrolls the button into view to ensure it's clickable
- * 4. Clicks the button with error handling and fallback strategies
- * 5. Waits for redirect to Microsoft OAuth page
- * 6. Pauses to allow manual authentication
+ * 3. Clicks the button to navigate to Microsoft OAuth
+ * 4. Automatically fills in email/username
+ * 5. Automatically fills in password
+ * 6. Handles "Stay signed in?" prompt if it appears
  * 7. Waits for redirect back to the application
  * 8. Verifies successful login
- * 
- * Features:
- * - Robust button selection targeting button elements specifically
- * - Waits for button to be fully interactive before clicking
- * - Scrolls button into view to prevent click failures
- * - Fallback force-click strategy if initial click doesn't work
- * - Comprehensive logging for debugging
- * - Clear error messages if navigation fails
  * 
  * Usage: cy.login()
  * 
@@ -150,118 +148,254 @@ Cypress.Commands.add('assignNewPacket', () => {
  * across tests, so you only need to authenticate once per test run.
  */
 Cypress.Commands.add('login', () => {
+  const username = 'svc-pacenet-test2@rhanet.org';
+  const password = 'Badger123!';
+  
   // Use cy.session() to cache authentication and avoid re-authenticating
   cy.session('microsoft-oauth', () => {
-    // Visit the home page
+    cy.log('Starting Microsoft OAuth login flow...');
+    
+    // Strategy: Try multiple approaches in order
+    // 1. Try button click with multiple methods
+    // 2. If that fails, navigate directly to OAuth URL
+    
+    // Visit the home page first
     cy.visit('/');
+    cy.get('body').should('be.visible');
+    cy.wait(5000); // Wait for MSAL and React to initialize
     
-    // Wait for page to fully load and JavaScript to initialize
-    cy.wait(1000);
+    // Try to click the button first
+    cy.log('Attempting to click Sign In button...');
     
-    // Find and click the "Sign In with Microsoft" button with improved reliability
-    cy.log('Looking for Sign In with Microsoft button...');
-    
-    // First, wait for the button to exist and be visible
-    cy.contains('button', 'Sign In with Microsoft', { timeout: 15000 })
+    // Get the button and try multiple click methods
+    cy.contains('button', 'Sign In with Microsoft', { timeout: 20000 })
       .should('exist')
       .should('be.visible')
-      .as('signInButton');
-    
-    // Verify button is enabled and scroll into view
-    cy.get('@signInButton')
       .should('not.be.disabled')
+      .scrollIntoView()
       .then(($button) => {
-        cy.log('Button found and enabled. Scrolling into view...');
-        // Scroll button into view to ensure it's clickable
-        $button[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-      });
+        const button = $button[0];
+        button.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return $button;
+      })
+      .trigger('mouseover')
+      .wait(200)
+      .click({ force: false });
     
-    // Wait a brief moment for any animations or overlays to clear after scrolling
-    cy.wait(500);
+    // Wait and check if navigation occurred
+    cy.wait(3000);
     
-    // Verify button is still visible and actionable before clicking
-    cy.get('@signInButton')
-      .should('be.visible')
-      .should('not.be.disabled');
-    
-    // Store current URL to detect navigation using Cypress alias
-    cy.url().as('initialUrl').then((url) => {
-      cy.log(`Current URL before click: ${url}`);
-    });
-    
-    // Attempt to click the button
-    cy.log('Attempting to click Sign In with Microsoft button...');
-    cy.get('@signInButton').click({ force: false });
-    
-    // Wait a moment to allow click to register and navigation to start
-    cy.wait(2000);
-    
-    // Check if we've navigated away from the initial page and implement fallback if needed
-    cy.get('@initialUrl').then((initialUrl) => {
-      cy.url({ timeout: 10000 }).then((currentUrl) => {
-        if (currentUrl === initialUrl) {
-          cy.log('Warning: Still on same page after click. Button may not have triggered navigation.');
-          cy.log('Attempting fallback: Force click on button...');
-          
-          // Fallback strategy: Try to find and force click the button again
-          // This will only execute if the button still exists on the page
-          cy.get('body').then(($body) => {
-            // Check if button text exists in the body
-            if ($body.text().includes('Sign In with Microsoft')) {
-              cy.log('Button text found, attempting force click as fallback...');
-              cy.contains('button', 'Sign In with Microsoft', { timeout: 5000 })
-                .should('exist')
-                .click({ force: true });
-              cy.wait(3000);
-            } else {
-              cy.log('Button no longer found on page - navigation may have started in background');
+    // Check URL
+    cy.url().then((currentUrl) => {
+      const isOAuthUrl = currentUrl.includes('login.microsoftonline.com') && currentUrl.includes('oauth2');
+      return isOAuthUrl;
+    })
+    .then((isOAuthUrl) => {
+      if (!isOAuthUrl) {
+        cy.log('Button click did not work, trying React onClick handler...');
+        
+        // Try React onClick handler
+        return cy.contains('button', 'Sign In with Microsoft', { timeout: 5000 })
+          .should('exist')
+          .then(($button) => {
+            const button = $button[0];
+            const reactKey = Object.keys(button).find(key => 
+              key.startsWith('__reactFiber') || key.startsWith('__reactInternalInstance')
+            );
+            
+            if (reactKey) {
+              let reactFiber = button[reactKey];
+              let depth = 0;
+              const maxDepth = 30;
+              
+              while (reactFiber && depth < maxDepth) {
+                if (reactFiber.memoizedProps?.onClick) {
+                  try {
+                    const syntheticEvent = {
+                      preventDefault: () => {},
+                      stopPropagation: () => {},
+                      currentTarget: button,
+                      target: button,
+                      type: 'click',
+                      bubbles: true,
+                      cancelable: true,
+                      nativeEvent: new MouseEvent('click', { bubbles: true, cancelable: true, view: window })
+                    };
+                    reactFiber.memoizedProps.onClick(syntheticEvent);
+                    return true;
+                  } catch (e) {
+                    // Continue
+                  }
+                }
+                reactFiber = reactFiber.return;
+                depth++;
+              }
             }
+            
+            // Try native events
+            ['mousedown', 'mouseup', 'click'].forEach(eventType => {
+              button.dispatchEvent(new MouseEvent(eventType, { bubbles: true, cancelable: true }));
+            });
+            if (button.click) button.click();
+            
+            return false;
           });
-        } else {
-          cy.log(`✅ Navigation detected: ${currentUrl}`);
-        }
-      });
-    });
-    
-    // Wait for navigation to Microsoft OAuth domain
-    // This assertion will fail with a clear error if navigation doesn't happen
-    cy.url({ timeout: 30000 }).should('satisfy', (url) => {
-      const isMicrosoftUrl = url.includes('login.microsoftonline.com') || 
-                            url.includes('microsoft.com') || 
-                            url.includes('oauth2');
-      
-      if (isMicrosoftUrl) {
-        cy.log(`✅ Successfully navigated to Microsoft OAuth: ${url}`);
-      } else {
-        cy.log(`❌ Error: Expected Microsoft OAuth URL but got: ${url}`);
-        cy.log('The button click may not have worked. Please check:');
-        cy.log('1. Button is visible and enabled');
-        cy.log('2. No JavaScript errors in console');
-        cy.log('3. Network requests are being made');
+      }
+      return null;
+    })
+    .then((result) => {
+      // Wait after trying React onClick
+      if (result !== null) {
+        cy.wait(3000);
       }
       
-      return isMicrosoftUrl;
+      // Check URL again
+      return cy.url();
+    })
+    .then((currentUrl) => {
+      const isOAuthUrl = currentUrl.includes('login.microsoftonline.com') && currentUrl.includes('oauth2');
+      if (!isOAuthUrl) {
+        cy.log('All click methods failed, navigating directly to OAuth URL...');
+        
+        // Navigate directly to OAuth URL as last resort
+        // Based on the URL pattern from user's manual test
+        const tenantId = '77567fba-7cef-44cb-b517-a6273f733405';
+        const clientId = 'e516539e-b645-4f77-b90f-93fdd12dabe2';
+        const redirectUri = encodeURIComponent('https://rha-patient-hgcya0gsd6e4gnde.eastus-01.azurewebsites.net/auth/callback');
+        const scope = encodeURIComponent('openid profile email offline_access');
+        
+        // Generate state and nonce (simplified)
+        const state = btoa(JSON.stringify({ id: Date.now().toString() }));
+        const nonce = btoa(Date.now().toString());
+        
+        const oauthUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize?` +
+          `client_id=${clientId}&` +
+          `scope=${scope}&` +
+          `redirect_uri=${redirectUri}&` +
+          `response_type=code&` +
+          `response_mode=fragment&` +
+          `state=${encodeURIComponent(state)}&` +
+          `nonce=${encodeURIComponent(nonce)}&` +
+          `x-client-SKU=msal.js.browser&` +
+          `x-client-VER=4.25.1`;
+        
+        cy.visit(oauthUrl, { failOnStatusCode: false });
+      }
     });
     
-    // Pause here to allow manual authentication
-    // User should complete the Microsoft login process manually
-    cy.log('⏸️  PAUSED: Please complete Microsoft authentication manually');
-    cy.log('After logging in, press the "Resume" button in Cypress to continue');
-    cy.pause();
-    
-    // After manual authentication, wait for redirect back to application
-    // The URL should change back to the application domain
-    cy.url({ timeout: 60000 }).should('satisfy', (url) => {
-      return url.includes('/provider-dashboard') || 
-             url.includes('/provider') ||
-             !url.includes('login.microsoftonline.com');
-    });
-    
-    // Verify we're logged in by checking for provider portal elements
-    cy.url({ timeout: 30000 }).should('include', '/provider');
-    
-    // Wait a bit for the page to fully load
+    // Wait for navigation to OAuth
     cy.wait(2000);
+    
+    // Wait for navigation to Microsoft OAuth domain
+    cy.url({ timeout: 30000 }).should('satisfy', (url) => {
+      const isOAuthUrl = url.includes('login.microsoftonline.com') && url.includes('oauth2');
+      if (isOAuthUrl) {
+        cy.log('✅ Successfully navigated to Microsoft OAuth:', url);
+      }
+      return isOAuthUrl;
+    });
+    
+    cy.log('✅ Navigated to Microsoft login page');
+    
+    // Fill in the email/username field
+    cy.get('input[type="email"], input[name="loginfmt"], input[id="i0116"]', { timeout: 15000 })
+      .should('be.visible')
+      .clear()
+      .type(username, { delay: 100 });
+    
+    // Click Next/Submit button
+    cy.get('input[type="submit"], button[type="submit"], #idSIButton9', { timeout: 10000 })
+      .should('be.visible')
+      .click({ force: false });
+    
+    // Wait for password field to appear
+    cy.get('input[type="password"], input[name="passwd"], input[id="i0118"]', { timeout: 15000 })
+      .should('be.visible')
+      .clear()
+      .type(password, { delay: 100 });
+    
+    // Click Sign in button
+    cy.get('input[type="submit"], button[type="submit"], #idSIButton9', { timeout: 10000 })
+      .should('be.visible')
+      .click({ force: false });
+    
+    // Handle "Stay signed in?" prompt if it appears
+    cy.get('body').then(($body) => {
+      if ($body.find('input[type="submit"][value*="Yes"], #idSIButton9, button:contains("Yes")').length > 0) {
+        cy.log('Handling "Stay signed in?" prompt...');
+        cy.get('input[type="submit"][value*="Yes"], #idSIButton9, button:contains("Yes")', { timeout: 10000 })
+          .should('be.visible')
+          .click({ force: false });
+      }
+    });
+    
+    // After clicking sign in, Microsoft will redirect back to our app
+    // The redirect_uri is /auth/callback according to the OAuth URL
+    cy.log('Waiting for redirect back to application...');
+    
+    // Wait for redirect to /auth/callback (the redirect_uri from MSAL)
+    cy.url({ timeout: 60000 }).should('satisfy', (url) => {
+      // Check if we're back on our application domain
+      const isOurDomain = url.includes('rha-patient-hgcya0gsd6e4gnde.eastus-01.azurewebsites.net');
+      const isMicrosoftDomain = url.includes('login.microsoftonline.com') || 
+                                url.includes('login.live.com');
+      
+      if (isMicrosoftDomain) {
+        cy.log('Still on Microsoft domain, waiting for redirect...');
+        return false;
+      }
+      
+      if (isOurDomain) {
+        cy.log('Redirected back to application:', url);
+        return true;
+      }
+      
+      return false;
+    });
+    
+    // The redirect should go to /auth/callback, then the app should redirect to the intended page
+    cy.url({ timeout: 30000 }).should('satisfy', (url) => {
+      return url.includes('rha-patient-hgcya0gsd6e4gnde.eastus-01.azurewebsites.net');
+    });
+    
+    // Wait for the callback to process and redirect to the final destination
+    cy.wait(3000);
+    
+    // Check if we're on /auth/callback or if we've been redirected further
+    cy.url().then((currentUrl) => {
+      if (currentUrl.includes('/auth/callback')) {
+        cy.log('On /auth/callback, waiting for app to process and redirect...');
+        // Wait for the app to process the callback and redirect
+        cy.url({ timeout: 30000 }).should('satisfy', (url) => {
+          return !url.includes('/auth/callback') || url.includes('/provider');
+        });
+      }
+    });
+    
+    // Wait for the page to fully load and cookies to be set
+    cy.wait(3000);
+    
+    // Verify cookies are set (important for session persistence)
+    cy.getCookies().then((cookies) => {
+      cy.log(`✅ Authentication cookies set: ${cookies.length} cookies found`);
+      cookies.forEach(cookie => {
+        cy.log(`  - ${cookie.name}: ${cookie.domain}`);
+      });
+      if (cookies.length === 0) {
+        cy.log('⚠️ Warning: No cookies found after authentication - session may not persist');
+      }
+    });
+    
+    // Navigate to provider page if we're not already there
+    cy.url().then((currentUrl) => {
+      if (!currentUrl.includes('/provider')) {
+        cy.log('Navigating to provider page...');
+        cy.visit('/provider');
+      }
+    });
+    
+    // Verify we're logged in by checking for provider portal
+    cy.url({ timeout: 30000 }).should('include', '/provider');
     
     cy.log('✅ Authentication completed successfully');
   }, {
@@ -297,25 +431,28 @@ Cypress.Commands.add('loginNonMFA', () => {
   
   // Use cy.session() to cache authentication and avoid re-authenticating
   cy.session('microsoft-oauth-non-mfa', () => {
-    // Visit the home page
-    cy.visit('/');
+    // Azure App Service OAuth endpoint is at the root, not under /employee/
+    // We need to use the full URL to access the root-level auth endpoint
+    cy.log('Navigating directly to Microsoft OAuth endpoint...');
     
-    // Wait for page to fully load and JavaScript to initialize
-    cy.wait(1000);
+    // Get the base URL without the /employee/ path
+    const baseUrlWithoutPath = 'https://rha-patient-hgcya0gsd6e4gnde.eastus-01.azurewebsites.net';
+    const redirectUrl = '/employee/provider';
     
-    // Find and click the "Sign In with Microsoft" button
-    cy.log('Looking for Sign In with Microsoft button...');
-    cy.contains('button', 'Sign In with Microsoft', { timeout: 15000 })
-      .should('exist')
-      .should('be.visible')
-      .should('not.be.disabled')
-      .click({ force: false });
+    // Navigate to the root-level OAuth endpoint
+    cy.visit(`${baseUrlWithoutPath}/.auth/login/microsoft?post_login_redirect_url=${encodeURIComponent(redirectUrl)}`, {
+      failOnStatusCode: false // Don't fail on 404, let it redirect
+    });
+    
+    // Wait a moment for the redirect to initiate
+    cy.wait(2000);
     
     // Wait for navigation to Microsoft OAuth domain
     cy.url({ timeout: 30000 }).should('satisfy', (url) => {
       return url.includes('login.microsoftonline.com') || 
              url.includes('microsoft.com') || 
-             url.includes('oauth2');
+             url.includes('oauth2') ||
+             url.includes('login.live.com');
     });
     
     cy.log('✅ Navigated to Microsoft login page');

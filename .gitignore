@@ -5,3 +5,9 @@ node_modules/
 screenshots/**
 
 cypress/downloads/**
+
+.temp/
+
+playwright/.auth/
+playwright/test-results/** */
+playwright/playwright-report/** */

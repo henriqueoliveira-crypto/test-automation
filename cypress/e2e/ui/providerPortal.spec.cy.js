@@ -4,6 +4,7 @@ describe('Provider Portal Page', () => {
   beforeEach(() => {
     // Use the custom login command which handles OAuth with cy.session()
     // This will cache authentication across tests, so manual login is only needed once
+    cy.visit('/');
     cy.login();
   });
 

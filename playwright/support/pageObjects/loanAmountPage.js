@@ -1,0 +1,6 @@
+module.exports = {
+  loanAmountRequested: '#loan_amount',
+  loanTerm: '#loan_term',
+  loanAmountError: '#loan_amount_error'
+};
+

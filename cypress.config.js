@@ -5,7 +5,7 @@ module.exports = defineConfig({
     setupNodeEvents(on, config) {
       // implement node event listeners here
     },
-    baseUrl: 'https://rha-patient-hgcya0gsd6e4gnde.eastus-01.azurewebsites.net/provider',
+    baseUrl: 'https://rha-patient-hgcya0gsd6e4gnde.eastus-01.azurewebsites.net/employee/',
     // Allow cross-origin navigation for OAuth flows
     chromeWebSecurity: false,
     // Enable experimental features for better OAuth handling

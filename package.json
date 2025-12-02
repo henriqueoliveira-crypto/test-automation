@@ -5,13 +5,22 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "cy": "cypress open"
+    "cy": "cypress open",
+    "playwright:test": "playwright test",
+    "playwright:test:headed": "playwright test --headed",
+    "playwright:test:ui": "playwright test --grep @ui",
+    "playwright:test:api": "playwright test --grep @api",
+    "playwright:ui": "playwright test --ui",
+    "playwright:debug": "playwright test --debug",
+    "playwright:install": "playwright install",
+    "playwright:report": "playwright show-report"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
+    "@playwright/test": "^1.40.0",
     "cypress": "^14.5.4"
   }
 }
