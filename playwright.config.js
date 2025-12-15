@@ -7,12 +7,14 @@ module.exports = defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
+  timeout: 60000,
   
   use: {
-    baseURL: 'https://rha-patient-hgcya0gsd6e4gnde.eastus-01.azurewebsites.net/employee/',
+    baseURL: 'https://rha-pacenet-portal-stage-e4hheqgbh0e7gthf.eastus2-01.azurewebsites.net/employee',
+    //https://rha-pacenet-portal-dev-dqafcdhsb9fjgvc0.eastus2-01.azurewebsites.net/
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    video: 'on', // Record video for all tests (including successful ones)
     actionTimeout: 10000,
     navigationTimeout: 60000,
     // Reuse authentication state from global setup
