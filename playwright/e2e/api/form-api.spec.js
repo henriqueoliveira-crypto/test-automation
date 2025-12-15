@@ -80,6 +80,7 @@ test.describe('Form API @api', () => {
       
       // Handle both authenticated (200) and unauthenticated (401) responses
       if (response.status() === 401) {
+        // If unauthenticated, skip this test or mark as expected
         test.skip();
         return;
       }
@@ -132,7 +133,12 @@ test.describe('Form API @api', () => {
         return;
       }
       
-      if (handleAuthError(response, test)) return;
+      // Handle both authenticated (200) and unauthenticated (401) responses
+      if (response.status() === 401) {
+        // If unauthenticated, skip this test or mark as expected
+        test.skip();
+        return;
+      }
       
       expect(response.status()).toBe(testData.httpStatus.success);
       
@@ -159,7 +165,12 @@ test.describe('Form API @api', () => {
         return;
       }
       
-      if (handleAuthError(response, test)) return;
+      // Handle both authenticated (200) and unauthenticated (401) responses
+      if (response.status() === 401) {
+        // If unauthenticated, skip this test or mark as expected
+        test.skip();
+        return;
+      }
       
       expect(response.status()).toBe(testData.httpStatus.success);
       

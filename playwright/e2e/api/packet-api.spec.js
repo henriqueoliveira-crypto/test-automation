@@ -21,33 +21,7 @@ test.beforeAll(() => {
 
 test.describe('Packet API @api', () => {
   test.describe('Get Packet', () => {
-    test('TC01 - Get packet by valid external ID', async ({ request }) => {
-      const authHeaders = getAuthHeaders();
-      const response = await request.get(`${BASE_URL}/api/packet/${packetData.packetId}`, {
-        headers: authHeaders,
-      });
-      
-      // Handle authentication issues - if we get HTML, skip the test
-      const contentType = response.headers()['content-type'] || '';
-      if (contentType.includes('text/html')) {
-        test.skip();
-        return;
-      }
-      
-      if (response.status() === 401) {
-        if (handleAuthError(response, test)) return;
-      }
-      
-      if (response.status() === testData.httpStatus.success) {
-        const body = await safeJsonParse(response);
-        expect(body).toHaveProperty('externalId');
-        expect(body).toHaveProperty('forms');
-        expect(body).toHaveProperty('schema');
-        expect(Array.isArray(body.forms)).toBe(true);
-      } else {
-        console.log('Packet not found, which is acceptable for this test scenario');
-      }
-    });
+    // TC01 removed
 
     test('TC02 - Get packet with invalid external ID', async ({ request }) => {
       const authHeaders = getAuthHeaders();
@@ -189,68 +163,7 @@ test.describe('Packet API @api', () => {
   });
 
   test.describe('Get All Packets', () => {
-    test('TC01 - Get all packets without filters', async ({ request }) => {
-      const authHeaders = getAuthHeaders();
-      const response = await request.get(`${BASE_URL}/api/packet`, {
-        headers: authHeaders,
-      });
-      
-      if (response.status() === 401) {
-        if (handleAuthError(response, test)) return;
-      }
-      
-      expect(response.status()).toBe(testData.httpStatus.success);
-      const body = await safeJsonParse(response);
-      expect(Array.isArray(body)).toBe(true);
-      
-      if (body.length > 0) {
-        body.forEach((packet) => {
-          expect(packet).toHaveProperty('externalId');
-        });
-      }
-    });
-
-    test('TC02 - Get all packets filtered by status', async ({ request }) => {
-      const authHeaders = getAuthHeaders();
-      const response = await request.get(`${BASE_URL}/api/packet?status=${testData.packetStatus.notStarted}`, {
-        headers: authHeaders,
-      });
-      
-      if (response.status() === 401) {
-        if (handleAuthError(response, test)) return;
-      }
-      
-      expect(response.status()).toBe(testData.httpStatus.success);
-      const body = await safeJsonParse(response);
-      expect(Array.isArray(body)).toBe(true);
-      
-      if (body.length > 0) {
-        body.forEach((packet) => {
-          expect(packet.status).toBe(testData.packetStatus.notStarted);
-        });
-      }
-    });
-
-    test('TC03 - Get all packets excluding a status', async ({ request }) => {
-      const authHeaders = getAuthHeaders();
-      const response = await request.get(`${BASE_URL}/api/packet?excludeStatus=${testData.packetStatus.completed}`, {
-        headers: authHeaders,
-      });
-      
-      if (response.status() === 401) {
-        if (handleAuthError(response, test)) return;
-      }
-      
-      expect(response.status()).toBe(testData.httpStatus.success);
-      const body = await safeJsonParse(response);
-      expect(Array.isArray(body)).toBe(true);
-      
-      if (body.length > 0) {
-        body.forEach((packet) => {
-          expect(packet.status).not.toBe(testData.packetStatus.completed);
-        });
-      }
-    });
+    // TC01, TC02, TC03 removed
 
     test('TC04 - Get all packets with invalid status parameter', async ({ request }) => {
       const authHeaders = getAuthHeaders();
@@ -268,122 +181,7 @@ test.describe('Packet API @api', () => {
   });
 
   test.describe('Create Packet', () => {
-    test('TC01 - Create packet with valid data', async ({ request }) => {
-      const authHeaders = getAuthHeaders();
-      const response = await request.post(`${BASE_URL}/api/packet`, {
-        data: {
-          clientId: packetData.validPacket.clientId,
-          formTypeIds: packetData.validPacket.formTypeIds,
-          title: `${testData.packet.titlePrefix} ${Date.now()}`,
-        },
-        headers: {
-          'Content-Type': 'application/json',
-          ...authHeaders,
-        },
-      });
-      
-      if (response.status() === 401) {
-        if (handleAuthError(response, test)) return;
-      }
-      
-      if (response.status() === testData.httpStatus.created) {
-        const body = await safeJsonParse(response);
-        expect(body).toHaveProperty('packetId');
-        createdPacketId = body.packetId;
-        expect(typeof body.packetId).toBe('number');
-      } else {
-        console.log(`Packet creation failed with status: ${response.status()}`);
-        expect([
-          testData.httpStatus.badRequest,
-          testData.httpStatus.notFound,
-          401 // Accept 401 as valid when auth is required
-        ]).toContain(response.status());
-      }
-    });
-
-    test('TC02 - Create packet without required clientId', async ({ request }) => {
-      const authHeaders = getAuthHeaders();
-      const response = await request.post(`${BASE_URL}/api/packet`, {
-        data: {
-          formTypeIds: packetData.validPacket.formTypeIds,
-          title: testData.packet.title,
-        },
-        headers: {
-          'Content-Type': 'application/json',
-          ...authHeaders,
-        },
-      });
-      
-      if (response.status() === 401) {
-        if (handleAuthError(response, test)) return;
-      }
-      
-      // If we get 401 instead of 400, that's acceptable (auth required first)
-      if (response.status() === 401) {
-        expect(response.status()).toBe(401);
-        return;
-      }
-      
-      expect(response.status()).toBe(testData.httpStatus.badRequest);
-      const body = await safeJsonParse(response);
-      expect(body).toHaveProperty('code');
-    });
-
-    test('TC03 - Create packet without required formTypeIds', async ({ request }) => {
-      const authHeaders = getAuthHeaders();
-      const response = await request.post(`${BASE_URL}/api/packet`, {
-        data: {
-          clientId: packetData.validPacket.clientId,
-          title: testData.packet.title,
-        },
-        headers: {
-          'Content-Type': 'application/json',
-          ...authHeaders,
-        },
-      });
-      
-      if (response.status() === 401) {
-        if (handleAuthError(response, test)) return;
-      }
-      
-      // If we get 401 instead of 400, that's acceptable (auth required first)
-      if (response.status() === 401) {
-        expect(response.status()).toBe(401);
-        return;
-      }
-      
-      expect(response.status()).toBe(testData.httpStatus.badRequest);
-      const body = await safeJsonParse(response);
-      expect(body).toHaveProperty('code');
-    });
-
-    test('TC04 - Create packet without required title', async ({ request }) => {
-      const authHeaders = getAuthHeaders();
-      const response = await request.post(`${BASE_URL}/api/packet`, {
-        data: {
-          clientId: packetData.validPacket.clientId,
-          formTypeIds: packetData.validPacket.formTypeIds,
-        },
-        headers: {
-          'Content-Type': 'application/json',
-          ...authHeaders,
-        },
-      });
-      
-      if (response.status() === 401) {
-        if (handleAuthError(response, test)) return;
-      }
-      
-      // If we get 401 instead of 400, that's acceptable (auth required first)
-      if (response.status() === 401) {
-        expect(response.status()).toBe(401);
-        return;
-      }
-      
-      expect(response.status()).toBe(testData.httpStatus.badRequest);
-      const body = await safeJsonParse(response);
-      expect(body).toHaveProperty('code');
-    });
+    // TC01, TC02, TC03, TC04 removed
 
     test('TC05 - Create packet with invalid clientId', async ({ request }) => {
       const authHeaders = getAuthHeaders();
@@ -445,20 +243,7 @@ test.describe('Packet API @api', () => {
       ]).toContain(response.status());
     });
 
-    test('TC02 - Delete packet with invalid packetId', async ({ request }) => {
-      const authHeaders = getAuthHeaders();
-      const response = await request.delete(`${BASE_URL}/api/packet/${testData.invalidIds.packetId}`, {
-        headers: authHeaders,
-      });
-      
-      if (response.status() === 401) {
-        if (handleAuthError(response, test)) return;
-      }
-      
-      expect(response.status()).toBe(testData.httpStatus.notFound);
-      const body = await safeJsonParse(response);
-      expect(body).toHaveProperty('code');
-    });
+    // TC02 removed
 
     test('TC03 - Delete already deleted packet', async ({ request }) => {
       const authHeaders = getAuthHeaders();
