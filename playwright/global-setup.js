@@ -5,7 +5,7 @@ const fs = require('fs');
 async function globalSetup() {
   const browser = await chromium.launch();
   const context = await browser.newContext({
-    baseURL: 'https://rha-patient-hgcya0gsd6e4gnde.eastus-01.azurewebsites.net/employee/',
+    baseURL: 'https://rha-pacenet-portal-dev-dqafcdhsb9fjgvc0.eastus2-01.azurewebsites.net/employee/',
   });
   const page = await context.newPage();
 

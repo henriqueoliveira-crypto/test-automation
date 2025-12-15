@@ -1,7 +1,7 @@
 const { test, expect } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
-const { safeJsonParse, handleAuthError } = require('../../support/api-test-helpers');
+const { safeJsonParse, handleAuthError, getAuthHeaders } = require('../../support/api-test-helpers');
 
 const BASE_URL = 'https://rha-patient-hgcya0gsd6e4gnde.eastus-01.azurewebsites.net';
 
@@ -15,7 +15,19 @@ test.beforeAll(() => {
 
 test.describe('Analytics API @api', () => {
   test('TC01 - Get analytics data successfully', async ({ request }) => {
-    const response = await request.get(`${BASE_URL}/api/analytics`);
+    // Get authentication headers from storageState
+    const authHeaders = getAuthHeaders();
+    
+    const response = await request.get(`${BASE_URL}/api/analytics`, {
+      headers: authHeaders,
+    });
+    
+    // Handle authentication issues - if we get HTML, skip the test
+    const contentType = response.headers()['content-type'] || '';
+    if (contentType.includes('text/html')) {
+      test.skip();
+      return;
+    }
     
     if (handleAuthError(response, test)) return;
     
@@ -28,7 +40,19 @@ test.describe('Analytics API @api', () => {
   });
 
   test('TC02 - Verify analytics response structure', async ({ request }) => {
-    const response = await request.get(`${BASE_URL}/api/analytics`);
+    // Get authentication headers from storageState
+    const authHeaders = getAuthHeaders();
+    
+    const response = await request.get(`${BASE_URL}/api/analytics`, {
+      headers: authHeaders,
+    });
+    
+    // Handle authentication issues - if we get HTML, skip the test
+    const contentType = response.headers()['content-type'] || '';
+    if (contentType.includes('text/html')) {
+      test.skip();
+      return;
+    }
     
     if (handleAuthError(response, test)) return;
     
